@@ -5,8 +5,6 @@ designed for monocular or stereo setup towards multi-camera systems, and also in
 
 We release a version of the code with features integrated into ORB-SLAM3 to demonstrate the concept. **However, the comprehensive code version used in Hilti Challenge 2023, will not be released.**
 
-<a href="https://www.youtube.com/watch?v=CuC8mdZAZyg" target="_blank"><img src="http://img.youtube.com/vi/CuC8mdZAZyg/0.jpg"
-alt="icra" width="240" height="180" border="10" /></a>
 <a href="https://youtu.be/2Xome0ZD-24?feature=shared" target="_blank"><img src="https://img.youtube.com/vi/2Xome0ZD-24/0.jpg"
 alt="cla" width="240" height="180" border="10" /></a>
 
