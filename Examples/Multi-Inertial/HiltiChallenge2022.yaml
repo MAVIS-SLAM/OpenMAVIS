@@ -1,0 +1,173 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+File.version: "1.0"
+
+Camera.type: "KannalaBrandt8"
+
+# Left Camera calibration and distortion parameters (OpenCV)
+Camera1.fx: 352.8913557983792
+Camera1.fy: 352.7847153190321
+Camera1.cx: 346.97323452281586
+Camera1.cy: 271.81100577288737
+
+# Kannala-Brandt distortion parameters
+Camera1.k1: -0.043389324930215536
+Camera1.k2: 0.003107640448830285
+Camera1.k3: -0.0037427054744242987
+Camera1.k4: 0.0007777186933455688
+
+# Right Camera calibration and distortion parameters (OpenCV)
+Camera2.fx: 351.8009892830421
+Camera2.fy: 351.6280684414713
+Camera2.cx: 367.8012904752455
+Camera2.cy: 254.8007945841205
+
+# Kannala-Brandt distortion parameters
+Camera2.k1: -0.04338445691750529
+Camera2.k2: 0.0041968714754669675
+Camera2.k3: -0.003800042168422922
+Camera2.k4: 0.0006032811514173166
+
+# Side-Left Camera calibration and distortion parameters (OpenCV)
+Camera3.fx: 349.15902033416296
+Camera3.fy: 349.19507664547535
+Camera3.cx: 342.4496484912912
+Camera3.cy: 259.7918462559407
+
+# KannalaBrandt8 distortion parameters
+Camera3.k1: -0.038573120123828596
+Camera3.k2: -0.001592762006804195
+Camera3.k3: 0.00026012483984812467
+Camera3.k4: -0.0004093066719415896
+
+# Side-Right Camera calibration and distortion parameters (OpenCV)
+Camera4.fx: 350.4224918214405
+Camera4.fy: 350.42698873973904
+Camera4.cx: 364.45586188748047
+Camera4.cy: 266.1758342332095
+
+# KannalaBrandt8 distortion parameters
+Camera4.k1: -0.037908345844681106
+Camera4.k2: -0.00012037903855186935
+Camera4.k3: -0.0011713947305290857
+Camera4.k4: 4.0049266665953e-05
+
+# Transformation matrix from right camera to left camera
+Stereo.T_c1_c2: !!opencv-matrix
+  rows: 4
+  cols: 4
+  dt: f
+  data: [ 0.9999810732443721, 0.004682955447953159, -0.003990373579562297, 0.10914435294524377,
+          -0.004690025079057252, 0.9999874456240819, -0.001764159567587884, 0.00035092962959468014,
+          0.003982062002254234, 0.001782841129933816, 0.9999904822845636, 0.00042162596612784647,
+          0, 0, 0, 1]
+
+# Overlapping area between images (to be updated)
+Camera1.overlappingBegin: 0
+Camera1.overlappingEnd: 720
+
+Camera2.overlappingBegin: 0
+Camera2.overlappingEnd: 720
+
+Camera3.overlappingBegin: 0   #Left and Side Left
+Camera3.overlappingEnd: 720
+
+Camera4.overlappingBegin: 0   #Right and Side Right
+Camera4.overlappingEnd: 720
+
+# Camera resolution
+Camera.width: 720
+Camera.height: 540
+
+# Camera frames per second
+Camera.fps: 30
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 1
+
+# Close/Far threshold. Baseline times.
+Stereo.ThDepth: 40.0
+
+# Transformation from body-frame (imu) to left camera
+IMU.T_b_c1: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: f
+   data: [0.00348369, -0.00197191, 0.99999199, 0.04741809,
+          0.99999365, 0.00076353, -0.00348219, -0.06272441,
+          -0.00075666, 0.99999776, 0.00197456, -0.00873926,
+          0, 0, 0, 1]
+
+# Transformation from side-left camera to body-frame (imu)
+IMU.T_b_c3: !!opencv-matrix
+  rows: 4
+  cols: 4
+  dt: f
+  data: [0.99999204, 0.00394231, -0.00062215, -0.00814651,
+         -0.00059289, -0.0074175, -0.99997231, -0.08003969,
+         -0.00394681, 0.99996472, -0.0074151, -0.00975499,
+         0, 0, 0, 1]
+
+# Transformation from side-right camera to body-frame (imu)
+IMU.T_b_c4: !!opencv-matrix
+  rows: 4
+  cols: 4
+  dt: f
+  data: [-0.99988962, 0.01238942, 0.00820085, -0.00606784,
+         0.0081229, -0.00632904, 0.99994698, 0.06457457,
+         0.01244067, 0.99990322, 0.00622771, -0.00765811,
+         0, 0, 0, 1]
+
+# IMU noise (Use those from VINS-mono)
+IMU.NoiseGyro: 0.000171 # 0.004 (VINS) # 0.00016 (TUM) # 0.00016    # rad/s^0.5
+IMU.NoiseAcc: 0.0086 # 0.04 (VINS) # 0.0028 (TUM) # 0.0028     # m/s^1.5
+IMU.GyroWalk: 3.1e-06 # 0.000022 (VINS and TUM) rad/s^1.5
+IMU.AccWalk: 0.00022 # 0.0004 (VINS) # 0.00086 # 0.00086    # m/s^2.5
+IMU.Frequency: 400.0
+
+#--------------------------------------------------------------------------------------------
+# ORB Parameters
+#--------------------------------------------------------------------------------------------
+
+# ORB Extractor: Number of features per image
+ORBextractor.nFeatures: 500 # Tested with 1250
+
+# ORB Extractor: Scale factor between levels in the scale pyramid
+ORBextractor.scaleFactor: 1.2
+
+# ORB Extractor: Number of levels in the scale pyramid
+ORBextractor.nLevels: 8
+
+# ORB Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast
+ORBextractor.iniThFAST: 15
+ORBextractor.minThFAST: 7
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1.0
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2.0
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -3.5
+Viewer.ViewpointF: 500.0
+Viewer.imageViewScale: 0.45
+
+#--------------------------------------------------------------------------------------------
+# Map Parameters
+#--------------------------------------------------------------------------------------------
+# If the LoadFile doesn't exist, the system give a message and create a new Atlas from scratch
+#System.LoadAtlasFromFile: "saved_map"
+#
+# The store file is created from the current session, if a file with the same name exists it is deleted
+#System.SaveAtlasToFile: "saved_map"
