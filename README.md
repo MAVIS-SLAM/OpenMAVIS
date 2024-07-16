@@ -3,7 +3,7 @@
 MAVIS is an optimization-based Visual Inertial SLAM system designed for multiple partially overlapped camera systems. It extends conventional front-end tracking and back-end optimization module
 designed for monocular or stereo setup towards multi-camera systems, and also introduce a new IMU pre-integration formulation. 
 
-We release a version of the code with features integrated into ORB-SLAM3 to demonstrate the concept. **However, the comprehensive code version used in Hilti Challenge 2023, will not be released.**
+We release a version of the code with features integrated into ORB-SLAM3 to demonstrate the concept. **Please be advised that this is a re-implemented version based on ORB_SLAM3 and not the original MAVIS code. The original code will not be released.**
 
 <a href="https://youtu.be/guFg_Ppt1Ag" target="_blank"><img src="https://img.youtube.com/vi/guFg_Ppt1Ag/0.jpg"
 alt="cla" width="240" height="180" border="10" /></a> 
