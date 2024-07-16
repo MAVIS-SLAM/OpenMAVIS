@@ -1,4 +1,4 @@
-# Open-Source MAVIS implemented on ORB-SLAM3 with Mutli-Camera Systems
+# OpenMAVIS: Open-Source MAVIS implemented on ORB-SLAM3 with Mutli-Camera Systems
 ##  Project Overview
 MAVIS is an optimization-based Visual Inertial SLAM system designed for multiple partially overlapped camera systems. It extends conventional front-end tracking and back-end optimization module
 designed for monocular or stereo setup towards multi-camera systems, and also introduce a new IMU pre-integration formulation. 
