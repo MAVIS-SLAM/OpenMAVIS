@@ -139,14 +139,15 @@ void LocalMapping::Run()
                             mTinit += mpCurrentKeyFrame->mTimeStamp - mpCurrentKeyFrame->mPrevKF->mTimeStamp;
                         if(!mpCurrentKeyFrame->GetMap()->GetIniertialBA2())
                         {
-                            if((mTinit<10.f) && (dist<0.02))
-                            {
-                                cout << "Not enough motion for initializing. Reseting..." << endl;
-                                unique_lock<mutex> lock(mMutexReset);
-                                mbResetRequestedActiveMap = true;
-                                mpMapToReset = mpCurrentKeyFrame->GetMap();
-                                mbBadImu = true;
-                            }
+                            // TODO: might be to strict for initialization
+                            // if((mTinit<10.f) && (dist<0.02))
+                            // {
+                            //     cout << "Not enough motion for initializing. Reseting..." << endl;
+                            //     unique_lock<mutex> lock(mMutexReset);
+                            //     mbResetRequestedActiveMap = true;
+                            //     mpMapToReset = mpCurrentKeyFrame->GetMap();
+                            //     mbBadImu = true;
+                            // }
                         }
 
                         bool bLarge = ((mpTracker->GetMatchesInliers()>75)&&mbMonocular)||((mpTracker->GetMatchesInliers()>100)&&!mbMonocular);
