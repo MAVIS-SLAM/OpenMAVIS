@@ -8,6 +8,10 @@ We release a compact version of the code named ***OpenMAVIS***, with the primary
 <a href="https://youtu.be/guFg_Ppt1Ag" target="_blank"><img src="https://img.youtube.com/vi/guFg_Ppt1Ag/0.jpg"
 alt="cla" width="240" height="180" border="10" /></a> 
 
+##  News
+- We test our ***OpenMAVIS*** on Hilti-Challenge 2022 sequences, without parameters tuning and runs in several times(similar to ORB-SLAM3, it has random behaviour, see [here](https://github.com/UZ-SLAMLab/ORB_SLAM3/issues/68)), it achieves relative good results(leaderboard [link](https://hilti-challenge.com/leader-board-2022.html)). You are encouraged to try it yourself.
+<img src="evaluation/result.png" width="300" height="200">
+
 ## Features included in this repository:
 - ORB-SLAM3 apply to multi-camera VI-SLAM
 - SE2(3) based IMU pre-integration
