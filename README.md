@@ -35,11 +35,13 @@ https://github.com/user-attachments/assets/1a61f079-65ac-473d-b387-a58ff9863e14
 ## Related Papers
 [MAVIS] **Authors:** Yifu Wang*, Yonhon Ng*, Inkyu Sa, Alvaro Parra, Cristian Rodriguez, Tao Jun Lin, Hongdong Li, **MAVIS: Multi-Camera Augmented Visual-Inertial SLAM using SE2(3) Based Exact IMU Pre-integration**, *ICRA 2024*, **[PDF](https://arxiv.org/pdf/2309.08142)**
 ```
-@article{wang2023mavis,
-  title={Mavis: Multi-camera augmented visual-inertial slam using se2 (3) based exact imu pre-integration},
-  author={Wang, Yifu and Ng, Yonhon and Sa, Inkyu and Parra, Alvaro and Rodriguez, Cristian and Lin, Tao Jun and Li, Hongdong},
-  journal={arXiv preprint arXiv:2309.08142},
-  year={2023}
+@inproceedings{wang2024mavis,
+  title={MAVIS: Multi-Camera Augmented Visual-Inertial SLAM using SE 2 (3) Based Exact IMU Pre-integration},
+  author={Wang, Yifu and Ng, Yonhon and Sa, Inkyu and Parra, Alvaro and Rodriguez-Opazo, Cristian and Lin, Taojun and Li, Hongdong},
+  booktitle={2024 IEEE International Conference on Robotics and Automation (ICRA)},
+  pages={1694--1700},
+  year={2024},
+  organization={IEEE}
 }
 ```
 *If you use **OpenMAVIS** for your academic research, please cite our related papers.*
