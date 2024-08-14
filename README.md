@@ -1,6 +1,7 @@
 # <div align = "center">OpenMAVIS: Open-Source Multi-Camera Augmented Visual-Inertial SLAM on ORB-SLAM3</div>
 
 <div align="center">
+<a href="https://ieeexplore.ieee.org/document/10609982"><img src="https://img.shields.io/badge/Paper-IEEE ICRA-004088.svg"/></a>
 <a href="https://arxiv.org/abs/2309.08142"><img src="https://img.shields.io/badge/ArXiv-2308.11573-004088.svg"/></a>
 <a href="https://youtu.be/guFg_Ppt1Ag">
 <img alt="Youtube" src="https://img.shields.io/badge/Video-Youtube-red"/>
