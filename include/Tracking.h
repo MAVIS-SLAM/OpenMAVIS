@@ -381,7 +381,7 @@ protected:
 #endif
 
 public:
-    cv::Mat mImRight, mImSideLeft, mImSideRight;
+    cv::Mat mImLeft, mImRight, mImSideLeft, mImSideRight;
 };
 
 } //namespace ORB_SLAM

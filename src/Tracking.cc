@@ -1474,6 +1474,7 @@ Sophus::SE3f Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat 
 {
     mImGray = imRectLeft;
     cv::Mat imGrayRight = imRectRight;
+    mImLeft = imRectLeft;
     mImRight = imRectRight;
 
     if(mImGray.channels()==3)
@@ -1544,6 +1545,7 @@ Sophus::SE3f Tracking::GrabImageMulti(const cv::Mat &imRectLeft, const cv::Mat &
     cv::Mat imGrayRight = imRectRight;
     cv::Mat imGraySideLeft = imRectSideLeft;
     cv::Mat imGraySideRight = imRectSideRight;
+    mImLeft = imRectLeft;
     mImRight = imRectRight;
     mImSideLeft = imRectSideLeft;
     mImSideRight = imRectSideRight;
