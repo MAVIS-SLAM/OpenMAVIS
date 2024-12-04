@@ -1,12 +1,33 @@
-# OpenMAVIS: Open-Source MAVIS implemented on ORB-SLAM3 with Mutli-Camera Systems
+# <div align = "center">OpenMAVIS: Open-Source Multi-Camera Augmented Visual-Inertial SLAM on ORB-SLAM3</div>
+
+<div align="center">
+<a href="https://ieeexplore.ieee.org/document/10609982"><img src="https://img.shields.io/badge/Paper-IEEE ICRA-004088.svg"/></a>
+<a href="https://arxiv.org/abs/2309.08142"><img src="https://img.shields.io/badge/ArXiv-2308.11573-004088.svg"/></a>
+<a href="https://youtu.be/guFg_Ppt1Ag">
+<img alt="Youtube" src="https://img.shields.io/badge/Video-Youtube-red"/>
+</a>
+<a ><img alt="PRs-Welcome" src="https://img.shields.io/badge/PRs-Welcome-red" /></a>
+<a href="https://github.com/MAVIS-SLAM/ORB_SLAM3_MULTI/stargazers">
+<img alt="stars" src="https://img.shields.io/github/stars/MAVIS-SLAM/ORB_SLAM3_MULTI" />
+</a>
+<a href="https://github.com/MAVIS-SLAM/ORB_SLAM3_MULTI/network/members">
+<img alt="FORK" src="https://img.shields.io/github/forks/MAVIS-SLAM/ORB_SLAM3_MULTI?color=FF8000" />
+</a>
+<a href="https://github.com/MAVIS-SLAM/ORB_SLAM3_MULTI/issues">
+<img alt="Issues" src="https://img.shields.io/github/issues/MAVIS-SLAM/ORB_SLAM3_MULTI?color=0088ff"/>
+</a>
+</div>
+
 ##  Project Overview
 MAVIS is an optimization-based Visual Inertial SLAM system designed for multiple partially overlapped camera systems. It extends conventional front-end tracking and back-end optimization module
 designed for monocular or stereo setup towards multi-camera systems, and also introduce a new IMU pre-integration formulation. 
 
-We release a compact version of the code named ***OpenMAVIS***, with the primary features integrated into ORB-SLAM3 to demonstrate the concept. Some functions introduced in the original paper such as data pre-processing and IMU intrinsic compensation are not included. **Please be advised that this is a re-implemented version based on ORB_SLAM3 and not the original MAVIS code. The original code will not be released.**
+This is a reproduced compact version of the code named ***OpenMAVIS***, with the primary features integrated into ORB-SLAM3 to demonstrate the concept. Some functions introduced in the original paper such as data pre-processing and IMU intrinsic compensation are not included. **Please be advised that this is a re-implemented version based on ORB_SLAM3 and not the original MAVIS code. The original code will not be released.**
 
-<a href="https://youtu.be/guFg_Ppt1Ag" target="_blank"><img src="https://img.youtube.com/vi/guFg_Ppt1Ag/0.jpg"
-alt="cla" width="240" height="180" border="10" /></a> 
+https://github.com/user-attachments/assets/1a61f079-65ac-473d-b387-a58ff9863e14
+##  News
+* **`21 Jul 2024`:** ***OpenMAVIS*** is tested on Hilti-Challenge 2022 sequences, without parameters tuning and runs in several times(similar to ORB-SLAM3, it has random behaviour, see [here](https://github.com/UZ-SLAMLab/ORB_SLAM3/issues/68)), it achieves relative good results(leaderboard [link](https://hilti-challenge.com/leader-board-2022.html)). You are encouraged to try it yourself.
+<img src="evaluation/result.png" width="300" height="200">
 
 ## Features included in this repository:
 - ORB-SLAM3 apply to multi-camera VI-SLAM
@@ -15,14 +36,16 @@ alt="cla" width="240" height="180" border="10" /></a>
 ## Related Papers
 [MAVIS] **Authors:** Yifu Wang*, Yonhon Ng*, Inkyu Sa, Alvaro Parra, Cristian Rodriguez, Tao Jun Lin, Hongdong Li, **MAVIS: Multi-Camera Augmented Visual-Inertial SLAM using SE2(3) Based Exact IMU Pre-integration**, *ICRA 2024*, **[PDF](https://arxiv.org/pdf/2309.08142)**
 ```
-@article{wang2023mavis,
-  title={Mavis: Multi-camera augmented visual-inertial slam using se2 (3) based exact imu pre-integration},
-  author={Wang, Yifu and Ng, Yonhon and Sa, Inkyu and Parra, Alvaro and Rodriguez, Cristian and Lin, Tao Jun and Li, Hongdong},
-  journal={arXiv preprint arXiv:2309.08142},
-  year={2023}
+@inproceedings{wang2024mavis,
+  title={MAVIS: Multi-Camera Augmented Visual-Inertial SLAM using SE 2 (3) Based Exact IMU Pre-integration},
+  author={Wang, Yifu and Ng, Yonhon and Sa, Inkyu and Parra, Alvaro and Rodriguez-Opazo, Cristian and Lin, Taojun and Li, Hongdong},
+  booktitle={2024 IEEE International Conference on Robotics and Automation (ICRA)},
+  pages={1694--1700},
+  year={2024},
+  organization={IEEE}
 }
 ```
-*If you use **MAVIS** for your academic research, please cite our related papers.*
+*If you use **OpenMAVIS** for your academic research, please cite our related papers.*
 ## 1. Prepare the Hilti Challenge Dataset
 [Hilti Challenge 2022 dataset](https://hilti-challenge.com/dataset-2022.html) was recorded with five fisheye cameras and an inertial sensor. Download the rosbag file and run the data-processing script to convert to `EuRoC` format. 
 
@@ -36,12 +59,18 @@ Then, copy the timestamps from the first column of file
 ```
 and create a new timestamp file `timestamps.txt`
 
-## 2. Run ORB-SLAM3-Multi with Hilti Challenge Datasets
+## 2. Run OpenMAVIS with Hilti Challenge Datasets
 Similar to Run ORB-SLAM3, just need to compile the source code and run it:
 ```
 ./Examples/Multi-Inertial/multi_inertial_euroc Vocabulary/ORBvoc.txt Examples/Multi-Inertial/HiltiChallenge2022.yaml PATH/TO/YOUR/DATASET/
 PATH/TO/YOUR/timestamps.txt 
 ```
+
+## Acknowledgements
+We would like to show our greatest respect to authors of the following repos for making their works public:
+* [ORB-SLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3)
+
+And this README borrows the template from [G3Reg](https://github.com/HKUST-Aerial-Robotics/G3Reg).
 
 # ORB-SLAM3
 

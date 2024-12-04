@@ -121,7 +121,7 @@ IMU.T_b_c4: !!opencv-matrix
          0.01244067, 0.99990322, 0.00622771, -0.00765811,
          0, 0, 0, 1]
 
-# IMU noise (Use those from VINS-mono)
+# IMU noise
 IMU.NoiseGyro: 0.000171 # 0.004 (VINS) # 0.00016 (TUM) # 0.00016    # rad/s^0.5
 IMU.NoiseAcc: 0.0086 # 0.04 (VINS) # 0.0028 (TUM) # 0.0028     # m/s^1.5
 IMU.GyroWalk: 3.1e-06 # 0.000022 (VINS and TUM) rad/s^1.5
