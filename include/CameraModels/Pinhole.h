@@ -42,13 +42,13 @@ namespace ORB_SLAM3 {
             mnId=nNextId++;
             mnType = CAM_PINHOLE;
         }
-        Pinhole(const std::vector<float> _vParameters) : GeometricCamera(_vParameters), tvr(nullptr) {
+        Pinhole(const std::vector<float> _vParameters) : GeometricCamera(_vParameters), mvLappingArea(2,0), tvr(nullptr) {
             assert(mvParameters.size() == 4);
             mnId=nNextId++;
             mnType = CAM_PINHOLE;
         }
 
-        Pinhole(Pinhole* pPinhole) : GeometricCamera(pPinhole->mvParameters), tvr(nullptr) {
+        Pinhole(Pinhole* pPinhole) : GeometricCamera(pPinhole->mvParameters), mvLappingArea(2,0), tvr(nullptr) {
             assert(mvParameters.size() == 4);
             mnId=nNextId++;
             mnType = CAM_PINHOLE;
@@ -77,6 +77,7 @@ namespace ORB_SLAM3 {
 
         cv::Mat toK();
         Eigen::Matrix3f toK_();
+        std::vector<int> mvLappingArea;
 
         bool epipolarConstrain(GeometricCamera* pCamera2, const cv::KeyPoint& kp1, const cv::KeyPoint& kp2, const Eigen::Matrix3f& R12, const Eigen::Vector3f& t12, const float sigmaLevel, const float unc);
 

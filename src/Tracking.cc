@@ -563,8 +563,8 @@ void Tracking::newParameterLoader(Settings *settings) {
     mK_(0,2) = mpCamera->getParameter(2);
     mK_(1,2) = mpCamera->getParameter(3);
 
-    if((mSensor==System::STEREO || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD || mSensor==System::IMU_MULTI) &&
-        settings->cameraType() == Settings::KannalaBrandt){
+    if(mSensor==System::STEREO || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD || mSensor==System::IMU_MULTI)
+    {
         mpCamera2 = settings->camera2();
         mpCamera2 = mpAtlas->AddCamera(mpCamera2);
 

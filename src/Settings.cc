@@ -231,6 +231,12 @@ namespace ORB_SLAM3 {
                 vPinHoleDistorsion1_[3] = readParameter<float>(fSettings,"Camera1.p2",found);
             }
 
+            int colBegin = readParameter<int>(fSettings,"Camera1.overlappingBegin",found);
+            int colEnd = readParameter<int>(fSettings,"Camera1.overlappingEnd",found);
+            vector<int> vOverlapping = {colBegin, colEnd};
+
+            static_cast<KannalaBrandt8*>(calibration1_)->mvLappingArea = vOverlapping;
+
             //Check if we need to correct distortion from the images
             if((sensor_ == System::MONOCULAR || sensor_ == System::IMU_MONOCULAR) && vPinHoleDistorsion1_.size() != 0){
                 bNeedToUndistort_ = true;
@@ -289,7 +295,8 @@ namespace ORB_SLAM3 {
         bool found;
         vector<float> vCalibration;
         if (cameraType_ == PinHole) {
-            bNeedToRectify_ = true;
+            if (sensor_ != System::IMU_MULTI)
+                bNeedToRectify_ = true;
 
             //Read intrinsic parameters
             float fx = readParameter<float>(fSettings,"Camera2.fx",found);
@@ -319,6 +326,12 @@ namespace ORB_SLAM3 {
                 vPinHoleDistorsion2_[2] = readParameter<float>(fSettings,"Camera2.p1",found);
                 vPinHoleDistorsion2_[3] = readParameter<float>(fSettings,"Camera2.p2",found);
             }
+
+            int colBegin = readParameter<int>(fSettings,"Camera2.overlappingBegin",found);
+            int colEnd = readParameter<int>(fSettings,"Camera2.overlappingEnd",found);
+            vector<int> vOverlapping = {colBegin, colEnd};
+
+            static_cast<KannalaBrandt8*>(calibration2_)->mvLappingArea = vOverlapping;
         }
         else if(cameraType_ == KannalaBrandt){
             //Read intrinsic parameters
@@ -369,7 +382,8 @@ namespace ORB_SLAM3 {
         bool found;
         vector<float> vCalibration;
         if (cameraType_ == PinHole) {
-            bNeedToRectify_ = true;
+            if (sensor_ != System::IMU_MULTI)
+                bNeedToRectify_ = true;
 
             //Read intrinsic parameters
             float fx = readParameter<float>(fSettings,"Camera3.fx",found);
@@ -399,6 +413,12 @@ namespace ORB_SLAM3 {
                 vPinHoleDistorsion3_[2] = readParameter<float>(fSettings,"Camera3.p1",found);
                 vPinHoleDistorsion3_[3] = readParameter<float>(fSettings,"Camera3.p2",found);
             }
+
+            int colBegin = readParameter<int>(fSettings,"Camera3.overlappingBegin",found);
+            int colEnd = readParameter<int>(fSettings,"Camera3.overlappingEnd",found);
+            vector<int> vOverlapping = {colBegin, colEnd};
+
+            static_cast<KannalaBrandt8*>(calibration3_)->mvLappingArea = vOverlapping;
         }
         else if(cameraType_ == KannalaBrandt){
             //Read intrinsic parameters
@@ -432,7 +452,8 @@ namespace ORB_SLAM3 {
         bool found;
         vector<float> vCalibration;
         if (cameraType_ == PinHole) {
-            bNeedToRectify_ = true;
+            if (sensor_ != System::IMU_MULTI)
+                bNeedToRectify_ = true;
 
             //Read intrinsic parameters
             float fx = readParameter<float>(fSettings,"Camera4.fx",found);
@@ -462,6 +483,12 @@ namespace ORB_SLAM3 {
                 vPinHoleDistorsion4_[2] = readParameter<float>(fSettings,"Camera4.p1",found);
                 vPinHoleDistorsion4_[3] = readParameter<float>(fSettings,"Camera4.p2",found);
             }
+
+            int colBegin = readParameter<int>(fSettings,"Camera4.overlappingBegin",found);
+            int colEnd = readParameter<int>(fSettings,"Camera4.overlappingEnd",found);
+            vector<int> vOverlapping = {colBegin, colEnd};
+
+            static_cast<KannalaBrandt8*>(calibration4_)->mvLappingArea = vOverlapping;
         }
         else if(cameraType_ == KannalaBrandt){
             //Read intrinsic parameters
