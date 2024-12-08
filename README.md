@@ -26,7 +26,7 @@ This is a reproduced compact version of the code named ***OpenMAVIS***, with the
 
 https://github.com/user-attachments/assets/1a61f079-65ac-473d-b387-a58ff9863e14
 ##  News
-* **`08 Dec 2024`:** ***OpenMAVIS*** adds support for multiple PinHole camera models and introduces the new test dataset [The ShanghaiTech Mapping Robot Datasets](https://slam-hive.net/wiki/ShanghaiTech_Datasets). This dataset was collected by a ground robot in large outdoor environments. You are encouraged to try it yourself.
+* **`08 Dec 2024`:** ***OpenMAVIS*** adds support for multiple PinHole camera models.
 * **`21 Jul 2024`:** ***OpenMAVIS*** is tested on Hilti-Challenge 2022 sequences, without parameters tuning and runs in several times(similar to ORB-SLAM3, it has random behaviour, see [here](https://github.com/UZ-SLAMLab/ORB_SLAM3/issues/68)), it achieves relative good results(leaderboard [link](https://hilti-challenge.com/leader-board-2022.html)). You are encouraged to try it yourself.
 <img src="evaluation/result.png" width="300" height="200">
 
