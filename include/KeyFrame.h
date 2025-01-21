@@ -547,6 +547,9 @@ public:
     Sophus::SE3f GetRelativePoseTsrl();
     Sophus::SE3f GetRelativePoseTlsr();
 
+    void SetRelativePoseTlsl(Sophus::SE3f& Tlsl);
+    void SetRelativePoseTlsr(Sophus::SE3f& Tlsr);
+
     //KeyPoints in the right image (for stereo fisheye, coordinates are needed)
     const std::vector<cv::KeyPoint> mvKeysRight;
     const std::vector<cv::KeyPoint> mvKeysSideLeft, mvKeysSideRight;

@@ -86,8 +86,10 @@ public:
     void Update(const double *pu); // update in the imu reference
     void UpdateW(const double *pu); // update in the world reference
     Eigen::Vector2d Project(const Eigen::Vector3d &Xw, int cam_idx=0) const; // Mono
+    Eigen::Vector2d ProjectCalib(const Eigen::Vector3d &Xw, const Eigen::Isometry3d &Tcb, int cam_idx=0) const; // Multi calib
     Eigen::Vector3d ProjectStereo(const Eigen::Vector3d &Xw, int cam_idx=0) const; // Stereo
     bool isDepthPositive(const Eigen::Vector3d &Xw, int cam_idx=0) const;
+    bool isDepthPositiveCalib(const Eigen::Vector3d &Xw, const Eigen::Isometry3d &Tcb, int cam_idx=0) const;
 
 public:
     // For IMU
@@ -491,6 +493,60 @@ public:
     const Eigen::Vector3d Xw; // 3D point coordinates
     const int cam_idx;
 };
+
+class EdgeMonoCalib : public g2o::BaseMultiEdge<2,Eigen::Vector2d>
+{
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    EdgeMonoCalib(int cam_idx_=0): cam_idx(cam_idx_){
+        resize(3);
+    }
+
+    virtual bool read(std::istream& is){return false;}
+    virtual bool write(std::ostream& os) const{return false;}
+
+    void computeError(){
+        const g2o::VertexSBAPointXYZ* VPoint = static_cast<const g2o::VertexSBAPointXYZ*>(_vertices[0]);
+        const VertexPose* VPose = static_cast<const VertexPose*>(_vertices[1]);
+        const g2o::VertexSE3Expmap *VExtrinsics = static_cast<const g2o::VertexSE3Expmap *>(_vertices[2]);
+        const Eigen::Vector2d obs(_measurement);
+        _error = obs - VPose->estimate().ProjectCalib(VPoint->estimate(),VExtrinsics->estimate(),cam_idx);
+    }
+
+
+    virtual void linearizeOplus();
+
+    bool isDepthPositive()
+    {
+        const g2o::VertexSBAPointXYZ* VPoint = static_cast<const g2o::VertexSBAPointXYZ*>(_vertices[0]);
+        const VertexPose* VPose = static_cast<const VertexPose*>(_vertices[1]);
+        const g2o::VertexSE3Expmap *VExtrinsics = static_cast<const g2o::VertexSE3Expmap *>(_vertices[2]);
+        return VPose->estimate().isDepthPositiveCalib(VPoint->estimate(),VExtrinsics->estimate(),cam_idx);
+    }
+
+    Eigen::Matrix<double,2,15> GetJacobian(){
+        linearizeOplus();
+        Eigen::Matrix<double,2,15> J;
+        J.block<2,3>(0,0) = _jacobianOplus[0];
+        J.block<2,6>(0,3) = _jacobianOplus[1];
+        J.block<2,6>(0,9) = _jacobianOplus[2];
+        return J;
+    }
+
+    Eigen::Matrix<double,15,15> GetHessian(){
+        linearizeOplus();
+        Eigen::Matrix<double,2,15> J;
+        J.block<2,3>(0,0) = _jacobianOplus[0];
+        J.block<2,6>(0,3) = _jacobianOplus[1];
+        J.block<2,6>(0,9) = _jacobianOplus[2];
+        return J.transpose()*information()*J;
+    }
+
+public:
+    const int cam_idx;
+};
+
 
 class EdgeInertial : public g2o::BaseMultiEdge<9,Vector9d>
 {

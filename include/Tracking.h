@@ -113,6 +113,11 @@ public:
 
     float GetImageScale();
 
+    //Get Extrinsic for online-calib
+    Sophus::SE3f& Tlsl() {return mTlsl;}
+    Sophus::SE3f& Tlsr() {return mTlsr;}
+    IMU::Calib& ImuCalib() {return *mpImuCalib;}
+
 #ifdef REGISTER_LOOP
     void RequestStop();
     bool isStopped();
@@ -170,6 +175,9 @@ public:
     void ResetActiveMap(bool bLocMap = false);
 
     bool mbleft{true}, mbright{true}, mbsideleft{true}, mbsideright{true};
+
+    // Online Camera Calibration
+    bool mbcalib{false};
 
     float mMeanTrack;
     bool mbInitWith3KFs;

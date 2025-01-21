@@ -225,6 +225,17 @@ Eigen::Vector2d ImuCamPose::Project(const Eigen::Vector3d &Xw, int cam_idx) cons
     return pCamera[cam_idx]->project(Xc);
 }
 
+Eigen::Vector2d ImuCamPose::ProjectCalib(const Eigen::Vector3d &Xw, const Eigen::Isometry3d &Tcb, int cam_idx) const
+{
+    Eigen::Matrix3d _Rcw = Tcb.rotation() * Rwb.transpose();
+    Eigen::Vector3d _tcw = Tcb.translation() - _Rcw*twb;
+    Eigen::Vector3d Xc = _Rcw * Xw + _tcw;
+    // Eigen::Matrix3d _Rcw = Rcb[cam_idx] * Rwb.transpose();
+    // Eigen::Vector3d _tcw = tcb[cam_idx] - _Rcw*twb;
+    // Eigen::Vector3d Xc = _Rcw * Xw + _tcw;
+    return pCamera[cam_idx]->project(Xc);
+}
+
 Eigen::Vector3d ImuCamPose::ProjectStereo(const Eigen::Vector3d &Xw, int cam_idx) const
 {
     Eigen::Vector3d Pc = Rcw[cam_idx] * Xw + tcw[cam_idx];
@@ -238,6 +249,13 @@ Eigen::Vector3d ImuCamPose::ProjectStereo(const Eigen::Vector3d &Xw, int cam_idx
 bool ImuCamPose::isDepthPositive(const Eigen::Vector3d &Xw, int cam_idx) const
 {
     return (Rcw[cam_idx].row(2) * Xw + tcw[cam_idx](2)) > 0.0;
+}
+
+bool ImuCamPose::isDepthPositiveCalib(const Eigen::Vector3d &Xw, const Eigen::Isometry3d &Tcb, int cam_idx) const
+{
+    Eigen::Matrix3d _Rcw = Tcb.rotation() * Rwb.transpose();
+    Eigen::Vector3d _tcw = Tcb.translation() - _Rcw*twb;
+    return (_Rcw.row(2) * Xw + _tcw(2)) > 0.0;
 }
 
 void ImuCamPose::Update(const double *pu)
@@ -502,6 +520,42 @@ void EdgeStereoOnlyPose::linearizeOplus()
             -z , 0.0, x, 0.0, 1.0, 0.0,
             y ,  -x , 0.0, 0.0, 0.0, 1.0;
     _jacobianOplusXi = proj_jac * Rcb * SE3deriv;
+}
+
+void EdgeMonoCalib::linearizeOplus()
+{
+    const VertexPose* VPose = static_cast<const VertexPose*>(_vertices[1]);
+    const g2o::VertexSBAPointXYZ* VPoint = static_cast<const g2o::VertexSBAPointXYZ*>(_vertices[0]);
+    const g2o::VertexSE3Expmap *VExtrinsics = static_cast<const g2o::VertexSE3Expmap *>(_vertices[2]);
+
+    const Eigen::Matrix3d &Rcw = VExtrinsics->estimate().rotation().toRotationMatrix() * VPose->estimate().Rwb.transpose();
+    const Eigen::Vector3d &tcw = VExtrinsics->estimate().translation() - Rcw * VPose->estimate().twb;
+    const Eigen::Matrix3d &Rcb = VExtrinsics->estimate().rotation().toRotationMatrix();
+    const Eigen::Vector3d Xc = Rcw*VPoint->estimate() + tcw;
+    const Eigen::Vector3d Xb = VExtrinsics->estimate().rotation().toRotationMatrix().transpose()*Xc - Rcb.transpose() * VExtrinsics->estimate().translation();
+
+    const Eigen::Matrix<double,2,3> proj_jac = VPose->estimate().pCamera[cam_idx]->projectJac(Xc);
+    _jacobianOplus[0] = -proj_jac * Rcw;
+
+    Eigen::Matrix<double,3,6> SE3deriv;
+    double x = Xb(0);
+    double y = Xb(1);
+    double z = Xb(2);
+
+    SE3deriv << 0.0, z,   -y, 1.0, 0.0, 0.0,
+            -z , 0.0, x, 0.0, 1.0, 0.0,
+            y ,  -x , 0.0, 0.0, 0.0, 1.0;
+
+    _jacobianOplus[1] = proj_jac * Rcb * SE3deriv; // TODO optimize this product
+
+    Eigen::Matrix<double,3,6> Extderiv;
+    x = Xc(0);
+    y = Xc(1);
+    z = Xc(2);
+    Extderiv << 0.0, z,   -y, 1.0, 0.0, 0.0,
+            -z , 0.0, x, 0.0, 1.0, 0.0,
+            y ,  -x , 0.0, 0.0, 0.0, 1.0;
+    _jacobianOplus[2] = proj_jac * Extderiv;
 }
 
 VertexVelocity::VertexVelocity(KeyFrame* pKF)

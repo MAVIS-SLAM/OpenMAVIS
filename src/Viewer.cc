@@ -195,8 +195,9 @@ void Viewer::Run()
     pangolin::Var<bool> menuEnableLeftCam("menu.Enable Left Cam",true,true);
     pangolin::Var<bool> menuEnableRightCam("menu.Enable Right Cam",true,true);
     pangolin::Var<bool> menuEnableSideLeftCam("menu.Enable SideLeft Cam",true,true);
-    pangolin::Var<bool> menuEnableSiderightCam("menu.Enable Sideright Cam",true,true);
+    pangolin::Var<bool> menuEnableSideRightCam("menu.Enable Sideright Cam",true,true);
     pangolin::Var<bool> menuShowOptLba("menu.Show LBA opt", false, true);
+    pangolin::Var<bool> menuReCalibrate("menu.Re-Calibrate",false, true);
     // Define Camera Render Object (for view / scene browsing)
     pangolin::OpenGlRenderState s_cam(
                 pangolin::ProjectionMatrix(1024,768,mViewpointF,mViewpointF,512,389,0.1,1000),
@@ -343,7 +344,7 @@ void Viewer::Run()
         else
             mpTracker->mbsideleft = false;
 
-        if(menuEnableSiderightCam)
+        if(menuEnableSideRightCam)
             mpTracker->mbsideright = true;
         else
             mpTracker->mbsideright = false;
@@ -381,6 +382,11 @@ void Viewer::Run()
         cv::imshow("ORB-SLAM3-Multi: Current Frame",toShow);
         cv::waitKey(mT);
 
+        if(menuReCalibrate)
+            mpTracker->mbcalib = true;
+        else
+            mpTracker->mbcalib = false;
+
         if(menuReset)
         {
             menuShowGraph = true;
@@ -395,6 +401,7 @@ void Viewer::Run()
             menuFollowCamera = true;
             mpSystem->ResetActiveMap();
             menuReset = false;
+            menuReCalibrate = false;
         }
 
         if(menuStop)

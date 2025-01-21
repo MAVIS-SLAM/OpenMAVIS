@@ -2704,9 +2704,11 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
     return nIn;
 }
 
-void Optimizer::LocalInertialBA(KeyFrame *pKF, bool *pbStopFlag, Map *pMap, int& num_fixedKF, int& num_OptKF, int& num_MPs, int& num_edges, bool bLarge, bool bRecInit)
+void Optimizer::LocalInertialBA(KeyFrame *pKF, bool *pbStopFlag, Map *pMap, Tracking* mpTracker, int& num_fixedKF, int& num_OptKF, int& num_MPs, int& num_edges, bool bLarge, bool bRecInit)
 {
     Map* pCurrentMap = pKF->GetMap();
+    bool bCalib = mpTracker->mbcalib;
+    bCalib = false;
 
     int maxOpt=10;
     int opt_it=10;
@@ -3009,14 +3011,53 @@ void Optimizer::LocalInertialBA(KeyFrame *pKF, bool *pbStopFlag, Map *pMap, int&
     vector<MapPoint*> vpMapPointEdgeStereo;
     vpMapPointEdgeStereo.reserve(nExpectedSize);
 
+    // Sidewards Online-Calib
+    vector<EdgeMonoCalib*> vpEdgesMonoCalib;
+    vpEdgesMonoCalib.reserve(nExpectedSize);
 
+    vector<KeyFrame*> vpEdgeKFMonoCalib;
+    vpEdgeKFMonoCalib.reserve(nExpectedSize);
+
+    vector<MapPoint*> vpMapPointEdgeMonoCalib;
+    vpMapPointEdgeMonoCalib.reserve(nExpectedSize);
 
     const float thHuberMono = sqrt(5.991);
     const float chi2Mono2 = 5.991;
     const float thHuberStereo = sqrt(7.815);
     const float chi2Stereo2 = 7.815;
 
-    const unsigned long iniMPid = maxKFid*5;
+    const unsigned long iniMPid = maxKFid*5+2;
+
+    // Add vertex of side-left/right extrinsics if do online-calibration
+    if(bCalib)
+    {
+        g2o::VertexSE3Expmap *VExtrinsics_SL = new g2o::VertexSE3Expmap();
+        g2o::VertexSE3Expmap *VExtrinsics_SR = new g2o::VertexSE3Expmap();
+
+        Eigen::Matrix4d Tsll = mpTracker->Tlsl().inverse().matrix().cast<double>();
+        Eigen::Matrix4d Tsrl = mpTracker->Tlsr().inverse().matrix().cast<double>();
+        Eigen::Matrix3d Rcb = mpTracker->ImuCalib().mTcb.rotationMatrix().cast<double>();
+        Eigen::Vector3d tcb = mpTracker->ImuCalib().mTcb.translation().cast<double>();
+
+        Eigen::Vector3d tslb = Tsll.block<3,3>(0,0) * tcb + Tsll.block<3,1>(0,3);
+        Eigen::Matrix3d Rslb = Tsll.block<3,3>(0,0) * Rcb;
+        Eigen::Vector3d tsrb = Tsrl.block<3,3>(0,0) * tcb + Tsrl.block<3,1>(0,3);
+        Eigen::Matrix3d Rsrb= Tsrl.block<3,3>(0,0) * Rcb;
+
+        Eigen::Quaterniond q_sl(Rslb);
+        Eigen::Quaterniond q_sr(Rsrb);
+        g2o::SE3Quat SE3_SL(q_sl, tslb);
+        g2o::SE3Quat SE3_SR(q_sr, tsrb);
+
+        VExtrinsics_SL->setEstimate(SE3_SL);
+        VExtrinsics_SR->setEstimate(SE3_SR);
+        VExtrinsics_SL->setId(maxKFid*5);
+        VExtrinsics_SR->setId(maxKFid*5+1);
+        VExtrinsics_SL->setFixed(false);
+        VExtrinsics_SR->setFixed(false);
+        optimizer.addVertex(VExtrinsics_SL);
+        optimizer.addVertex(VExtrinsics_SR);
+    }
 
     map<int,int> mVisEdges;
     for(int i=0;i<N;i++)
@@ -3152,73 +3193,121 @@ void Optimizer::LocalInertialBA(KeyFrame *pKF, bool *pbStopFlag, Map *pMap, int&
                     }
                 }
 
-               if(pKFi->mpCamera3){
-                   int sideleftIndex = get<2>(mit->second);
-
-                   if(sideleftIndex != -1 ){
-                       sideleftIndex = sideleftIndex - pKFi->NLeft - pKFi->NRight;
-                       mVisEdges[pKFi->mnId]++;
-
-                       Eigen::Matrix<double,2,1> obs;
-                       cv::KeyPoint kp = pKFi->mvKeysSideLeft[sideleftIndex];
-                       obs << kp.pt.x, kp.pt.y;
-
-                       EdgeMono* e = new EdgeMono(2);
-
-                       e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
-                       e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId)));
-                       e->setMeasurement(obs);
-
-                       // Add here uncerteinty
-                       const float unc2 = pKFi->mpCamera->uncertainty2(obs); //TODO: check if need to change here
-
-                       const float &invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave]/unc2;
-                       e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
-
-                       g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
-                       e->setRobustKernel(rk);
-                       rk->setDelta(thHuberMono);
-
-                       optimizer.addEdge(e);
-                       vpEdgesMono.push_back(e);
-                       vpEdgeKFMono.push_back(pKFi);
-                       vpMapPointEdgeMono.push_back(pMP);
-                   }
-               }
-
-               if(pKFi->mpCamera4){
-                   int siderightIndex = get<3>(mit->second);
-
-                   if(siderightIndex != -1 ){
-                       siderightIndex = siderightIndex - pKFi->NLeft - pKFi->NRight - pKFi->NSideLeft;
-                       mVisEdges[pKFi->mnId]++;
-
-                       Eigen::Matrix<double,2,1> obs;
-                       cv::KeyPoint kp = pKFi->mvKeysSideRight[siderightIndex];
-                       obs << kp.pt.x, kp.pt.y;
-
-                       EdgeMono* e = new EdgeMono(3);
-
-                       e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
-                       e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId)));
-                       e->setMeasurement(obs);
-
-                       // Add here uncerteinty
-                       const float unc2 = pKFi->mpCamera->uncertainty2(obs); //TODO: check if need to change here
-
-                       const float &invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave]/unc2;
-                       e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
-
-                       g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
-                       e->setRobustKernel(rk);
-                       rk->setDelta(thHuberMono);
-
-                       optimizer.addEdge(e);
-                       vpEdgesMono.push_back(e);
-                       vpEdgeKFMono.push_back(pKFi);
-                       vpMapPointEdgeMono.push_back(pMP);
-                   }
-               }
+               // if(pKFi->mpCamera3){
+               //     int sideleftIndex = get<2>(mit->second);
+               //
+               //     if(sideleftIndex != -1 ){
+               //         sideleftIndex = sideleftIndex - pKFi->NLeft - pKFi->NRight;
+               //         mVisEdges[pKFi->mnId]++;
+               //
+               //         Eigen::Matrix<double,2,1> obs;
+               //         cv::KeyPoint kp = pKFi->mvKeysSideLeft[sideleftIndex];
+               //         obs << kp.pt.x, kp.pt.y;
+               //
+               //         if (bCalib){
+               //             EdgeMonoCalib* e = new EdgeMonoCalib(2);
+               //
+               //             e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
+               //             e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId)));
+               //             e->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(maxKFid*5)));
+               //             e->setMeasurement(obs);
+               //
+               //             // Add here uncerteinty
+               //             const float unc2 = pKFi->mpCamera->uncertainty2(obs); //TODO: check if need to change here
+               //
+               //             const float &invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave]/unc2;
+               //             e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+               //
+               //             g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+               //             e->setRobustKernel(rk);
+               //             rk->setDelta(thHuberMono);
+               //
+               //             optimizer.addEdge(e);
+               //             vpEdgesMonoCalib.push_back(e);
+               //             vpEdgeKFMonoCalib.push_back(pKFi);
+               //             vpMapPointEdgeMonoCalib.push_back(pMP);
+               //         }
+               //         else{
+               //             EdgeMono* e = new EdgeMono(2);
+               //
+               //             e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
+               //             e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId)));
+               //             e->setMeasurement(obs);
+               //
+               //             // Add here uncerteinty
+               //             const float unc2 = pKFi->mpCamera->uncertainty2(obs); //TODO: check if need to change here
+               //
+               //             const float &invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave]/unc2;
+               //             e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+               //
+               //             g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+               //             e->setRobustKernel(rk);
+               //             rk->setDelta(thHuberMono);
+               //
+               //             optimizer.addEdge(e);
+               //             vpEdgesMono.push_back(e);
+               //             vpEdgeKFMono.push_back(pKFi);
+               //             vpMapPointEdgeMono.push_back(pMP);
+               //         }
+               //     }
+               // }
+               //
+               // if(pKFi->mpCamera4){
+               //     int siderightIndex = get<3>(mit->second);
+               //
+               //     if(siderightIndex != -1 ){
+               //         siderightIndex = siderightIndex - pKFi->NLeft - pKFi->NRight - pKFi->NSideLeft;
+               //         mVisEdges[pKFi->mnId]++;
+               //
+               //         Eigen::Matrix<double,2,1> obs;
+               //         cv::KeyPoint kp = pKFi->mvKeysSideRight[siderightIndex];
+               //         obs << kp.pt.x, kp.pt.y;
+               //         if (bCalib){
+               //             EdgeMonoCalib* e = new EdgeMonoCalib(3);
+               //
+               //             e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
+               //             e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId)));
+               //             e->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(maxKFid*5+1)));
+               //             e->setMeasurement(obs);
+               //
+               //             // Add here uncerteinty
+               //             const float unc2 = pKFi->mpCamera->uncertainty2(obs); //TODO: check if need to change here
+               //
+               //             const float &invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave]/unc2;
+               //             e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+               //
+               //             g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+               //             e->setRobustKernel(rk);
+               //             rk->setDelta(thHuberMono);
+               //
+               //             optimizer.addEdge(e);
+               //             vpEdgesMonoCalib.push_back(e);
+               //             vpEdgeKFMonoCalib.push_back(pKFi);
+               //             vpMapPointEdgeMonoCalib.push_back(pMP);
+               //         }else{
+               //             EdgeMono* e = new EdgeMono(3);
+               //
+               //             e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
+               //             e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId)));
+               //             e->setMeasurement(obs);
+               //
+               //             // Add here uncerteinty
+               //             const float unc2 = pKFi->mpCamera->uncertainty2(obs); //TODO: check if need to change here
+               //
+               //             const float &invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave]/unc2;
+               //             e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+               //
+               //             g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+               //             e->setRobustKernel(rk);
+               //             rk->setDelta(thHuberMono);
+               //
+               //             optimizer.addEdge(e);
+               //             vpEdgesMono.push_back(e);
+               //             vpEdgeKFMono.push_back(pKFi);
+               //             vpMapPointEdgeMono.push_back(pMP);
+               //         }
+               //     }
+               // }
 
             }
         }
@@ -3229,13 +3318,20 @@ void Optimizer::LocalInertialBA(KeyFrame *pKF, bool *pbStopFlag, Map *pMap, int&
     optimizer.initializeOptimization();
     optimizer.computeActiveErrors();
     float err = optimizer.activeRobustChi2();
-    optimizer.optimize(opt_it); // Originally to 2
+    // optimizer.optimize(opt_it); // Originally to 2
+    for (int i = 0; i < opt_it; ++i)
+    {
+        optimizer.optimize(1, false); // 执行一步优化
+        double current_cost = optimizer.chi2();
+        std::cout << "Iteration " << i << " total cost: " << current_cost << std::endl;
+    }
+
     float err_end = optimizer.activeRobustChi2();
     if(pbStopFlag)
         optimizer.setForceStopFlag(pbStopFlag);
 
     vector<pair<KeyFrame*,MapPoint*> > vToErase;
-    vToErase.reserve(vpEdgesMono.size()+vpEdgesStereo.size());
+    vToErase.reserve(vpEdgesMono.size()+vpEdgesStereo.size()+vpEdgesMonoCalib.size());
 
     // Check inlier observations
     // Mono
@@ -3268,6 +3364,23 @@ void Optimizer::LocalInertialBA(KeyFrame *pKF, bool *pbStopFlag, Map *pMap, int&
         if(e->chi2()>chi2Stereo2)
         {
             KeyFrame* pKFi = vpEdgeKFStereo[i];
+            vToErase.push_back(make_pair(pKFi,pMP));
+        }
+    }
+
+    // Sidewards Online-Calib
+    for(size_t i=0, iend=vpEdgesMonoCalib.size(); i<iend;i++)
+    {
+        EdgeMonoCalib* e = vpEdgesMonoCalib[i];
+        MapPoint* pMP = vpMapPointEdgeMonoCalib[i];
+        bool bClose = pMP->mTrackDepth<10.f;
+
+        if(pMP->isBad())
+            continue;
+
+        if((e->chi2()>chi2Mono2 && !bClose) || (e->chi2()>1.5f*chi2Mono2 && bClose) || !e->isDepthPositive())
+        {
+            KeyFrame* pKFi = vpEdgeKFMonoCalib[i];
             vToErase.push_back(make_pair(pKFi,pMP));
         }
     }
@@ -3307,7 +3420,9 @@ void Optimizer::LocalInertialBA(KeyFrame *pKF, bool *pbStopFlag, Map *pMap, int&
         KeyFrame* pKFi = vpOptimizableKFs[i];
 
         VertexPose* VP = static_cast<VertexPose*>(optimizer.vertex(pKFi->mnId));
-        Sophus::SE3f Tcw(VP->estimate().Rcw[0].cast<float>(), VP->estimate().tcw[0].cast<float>());
+        Eigen::Matrix3f Rcw = NormalizeRotation(VP->estimate().Rcw[0]).cast<float>();
+        Eigen::Vector3f tcw = VP->estimate().tcw[0].cast<float>();
+        Sophus::SE3f Tcw(Rcw, tcw);
         pKFi->SetPose(Tcw);
         pKFi->mnBALocalForKF=0;
 
@@ -3329,7 +3444,9 @@ void Optimizer::LocalInertialBA(KeyFrame *pKF, bool *pbStopFlag, Map *pMap, int&
     {
         KeyFrame* pKFi = *it;
         VertexPose* VP = static_cast<VertexPose*>(optimizer.vertex(pKFi->mnId));
-        Sophus::SE3f Tcw(VP->estimate().Rcw[0].cast<float>(), VP->estimate().tcw[0].cast<float>());
+        Eigen::Matrix3f Rcw = NormalizeRotation(VP->estimate().Rcw[0]).cast<float>();
+        Eigen::Vector3f tcw = VP->estimate().tcw[0].cast<float>();
+        Sophus::SE3f Tcw(Rcw, tcw);
         pKFi->SetPose(Tcw);
         pKFi->mnBALocalForKF=0;
     }
@@ -3342,6 +3459,293 @@ void Optimizer::LocalInertialBA(KeyFrame *pKF, bool *pbStopFlag, Map *pMap, int&
         pMP->SetWorldPos(vPoint->estimate().cast<float>());
         pMP->UpdateNormalAndDepth();
     }
+
+    // recover extrinsics
+    if (bCalib)
+    {
+        g2o::VertexSE3Expmap* VExtrinsics_SL =  static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(maxKFid*5));
+        g2o::VertexSE3Expmap* VExtrinsics_SR =  static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(maxKFid*5+1));
+
+        Eigen::Vector3f tslb = VExtrinsics_SL->estimate().translation().cast<float>();
+        Eigen::Matrix3f Rslb = VExtrinsics_SL->estimate().rotation().toRotationMatrix().cast<float>();
+        Eigen::Matrix3f rsl_ = Rslb.transpose();
+        Eigen::Vector3f tsl_ = -rsl_ * tslb;
+        printf("Optimized Translation SL: x = %f, y = %f, z = %f\n", tsl_.x(), tsl_.y(), tsl_.z());
+        printf("Optimized Rotation SL:\n");
+        for (int i = 0; i < 3; ++i) {
+            printf("%f %f %f\n", rsl_(i, 0), rsl_(i, 1), rsl_(i, 2));
+        }
+
+        Eigen::Vector3f tsrb = VExtrinsics_SR->estimate().translation().cast<float>();
+        Eigen::Matrix3f Rsrb = VExtrinsics_SR->estimate().rotation().toRotationMatrix().cast<float>();
+        Eigen::Matrix3f rsr_ = Rsrb.transpose();
+        Eigen::Vector3f tsr_ = -rsr_ * tsrb;
+        printf("Optimized Translation SR: x = %f, y = %f, z = %f\n", tsr_.x(), tsr_.y(), tsr_.z());
+        printf("Optimized Rotation SR:\n");
+        for (int i = 0; i < 3; ++i) {
+            printf("%f %f %f\n", rsr_(i, 0), rsr_(i, 1), rsr_(i, 2));
+        }
+
+        Eigen::Matrix3f Rcb = mpTracker->ImuCalib().mTcb.rotationMatrix().cast<float>();
+        Eigen::Vector3f tcb = mpTracker->ImuCalib().mTcb.translation().cast<float>();
+
+        Eigen::Matrix3f Rsll = Rslb * Rcb.transpose();
+        Eigen::Vector3f tsll = tslb - Rsll * tcb;
+
+        Sophus::SE3f SE3_Tsll(Rsll, tsll);
+        mpTracker->Tlsl() = SE3_Tsll.inverse();
+
+        Eigen::Matrix3f Rsrl = Rsrb * Rcb.transpose();
+        Eigen::Vector3f tsrl = tsrb - Rsrl * tcb;
+        Sophus::SE3f SE3_Tsrl(Rsrl, tsrl);
+        mpTracker->Tlsr() = SE3_Tsrl.inverse();
+    }
+
+
+    pMap->IncreaseChangeIndex();
+}
+
+void Optimizer::OnlineCalibration(Map *pMap, int its, Tracking* mpTracker)
+{
+    long unsigned int maxKFid = pMap->GetMaxKFid();
+    const vector<KeyFrame*> vpKFs = pMap->GetAllKeyFrames();
+    // vector<KeyFrame*> allKFs = pMap->GetAllKeyFrames();
+    // const vector<KeyFrame*> vpKFs(allKFs.end() - std::min(20, (int)allKFs.size()), allKFs.end());
+    std::cout << "Number of KeyFrames in last20KFs: " << vpKFs.size() << std::endl;
+
+    const vector<MapPoint*> vpMPs = pMap->GetAllMapPoints();
+
+    // Setup optimizer
+    g2o::SparseOptimizer optimizer;
+    g2o::BlockSolverX::LinearSolverType * linearSolver;
+
+    linearSolver = new g2o::LinearSolverEigen<g2o::BlockSolverX::PoseMatrixType>();
+
+    g2o::BlockSolverX * solver_ptr = new g2o::BlockSolverX(linearSolver);
+
+    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
+    solver->setUserLambdaInit(1e-5);
+    optimizer.setAlgorithm(solver);
+    optimizer.setVerbose(false);
+
+    int nNonFixed = 0;
+
+    // Set KeyFrame vertices
+    KeyFrame* pIncKF;
+    for(size_t i=0; i<vpKFs.size(); i++)
+    {
+        KeyFrame* pKFi = vpKFs[i];
+        if(pKFi->mnId>maxKFid)
+            continue;
+        VertexPose * VP = new VertexPose(pKFi);
+        VP->setId(pKFi->mnId);
+        VP->setFixed(true);
+        pIncKF=pKFi;
+        optimizer.addVertex(VP);
+    }
+
+    const float thHuberMono = sqrt(5.991);
+    const float thHuberStereo = sqrt(7.815);
+
+    const unsigned long iniMPid = maxKFid*5+2;
+
+    // Add vertex of side-left/right extrinsics if do online-calibration
+    g2o::VertexSE3Expmap *VExtrinsics_SL = new g2o::VertexSE3Expmap();
+    g2o::VertexSE3Expmap *VExtrinsics_SR = new g2o::VertexSE3Expmap();
+
+    Eigen::Matrix4d Tsll = mpTracker->Tlsl().inverse().matrix().cast<double>();
+    Eigen::Matrix4d Tsrl = mpTracker->Tlsr().inverse().matrix().cast<double>();
+    Eigen::Matrix3d Rcb = mpTracker->ImuCalib().mTcb.rotationMatrix().cast<double>();
+    Eigen::Vector3d tcb = mpTracker->ImuCalib().mTcb.translation().cast<double>();
+
+    Eigen::Vector3d tslb = Tsll.block<3,3>(0,0) * tcb + Tsll.block<3,1>(0,3);
+    Eigen::Matrix3d Rslb = Tsll.block<3,3>(0,0) * Rcb;
+    Eigen::Vector3d tsrb = Tsrl.block<3,3>(0,0) * tcb + Tsrl.block<3,1>(0,3);
+    Eigen::Matrix3d Rsrb= Tsrl.block<3,3>(0,0) * Rcb;
+
+    Eigen::Quaterniond q_sl(Rslb);
+    Eigen::Quaterniond q_sr(Rsrb);
+    g2o::SE3Quat SE3_SL(q_sl, tslb);
+    g2o::SE3Quat SE3_SR(q_sr, tsrb);
+
+    VExtrinsics_SL->setEstimate(SE3_SL);
+    VExtrinsics_SR->setEstimate(SE3_SR);
+    VExtrinsics_SL->setId(maxKFid*5);
+    VExtrinsics_SR->setId(maxKFid*5+1);
+    VExtrinsics_SL->setFixed(false);
+    VExtrinsics_SR->setFixed(false);
+    optimizer.addVertex(VExtrinsics_SL);
+    optimizer.addVertex(VExtrinsics_SR);
+
+    vector<bool> vbNotIncludedMP(vpMPs.size(),false);
+
+    for(size_t i=0; i<vpMPs.size(); i++)
+    {
+        MapPoint* pMP = vpMPs[i];
+        g2o::VertexSBAPointXYZ* vPoint = new g2o::VertexSBAPointXYZ();
+        vPoint->setEstimate(pMP->GetWorldPos().cast<double>());
+        unsigned long id = pMP->mnId+iniMPid+1;
+        vPoint->setId(id);
+        vPoint->setFixed(true);
+        vPoint->setMarginalized(true);
+        optimizer.addVertex(vPoint);
+
+        const map<KeyFrame*,tuple<int,int,int,int>> observations = pMP->GetObservations();
+
+
+        bool bAllFixed = true;
+
+        //Set edges
+        for(map<KeyFrame*,tuple<int,int,int,int>>::const_iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
+        {
+            KeyFrame* pKFi = mit->first;
+
+            if(pKFi->mnId>maxKFid)
+                continue;
+
+            if(!pKFi->isBad())
+            {
+                const int leftIndex = get<0>(mit->second);
+                cv::KeyPoint kpUn;
+
+                // Side Left observation
+                if(pKFi->mpCamera3){
+                    int sideleftIndex = get<2>(mit->second);
+
+                    if(sideleftIndex != -1 && sideleftIndex < pKFi->mvKeysSideLeft.size()){
+                        sideleftIndex = sideleftIndex - pKFi->NLeft - pKFi->NRight;
+
+                        Eigen::Matrix<double,2,1> obs;
+                        kpUn = pKFi->mvKeysSideLeft[sideleftIndex];
+                        obs << kpUn.pt.x, kpUn.pt.y;
+
+                        if(!optimizer.vertex(pKFi->mnId))
+                            continue;
+                        g2o::OptimizableGraph::Vertex* VP = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId));
+
+                        if(bAllFixed)
+                            if(!optimizer.vertex(id)->fixed())
+                                bAllFixed=false;
+
+                        EdgeMonoCalib* e = new EdgeMonoCalib(2);
+                        optimizer.vertex(id)->setFixed(false);
+                        e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
+                        e->setVertex(1, VP);
+                        e->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(maxKFid*5)));
+                        e->setMeasurement(obs);
+                        const float invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave];
+                        e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+
+                        g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+                        e->setRobustKernel(rk);
+                        rk->setDelta(thHuberMono);
+
+                        optimizer.addEdge(e);
+                    }
+                }
+
+                // Side Right observation
+                if(pKFi->mpCamera4){
+                    int siderightIndex = get<3>(mit->second);
+
+                    if(siderightIndex != -1 && siderightIndex < pKFi->mvKeysSideRight.size()){
+                        siderightIndex = siderightIndex - pKFi->NLeft - pKFi->NRight - pKFi->NSideLeft;
+
+                        Eigen::Matrix<double,2,1> obs;
+                        kpUn = pKFi->mvKeysSideRight[siderightIndex];
+                        obs << kpUn.pt.x, kpUn.pt.y;
+
+                        if(!optimizer.vertex(pKFi->mnId))
+                            continue;
+                        g2o::OptimizableGraph::Vertex* VP = dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId));
+                        if(bAllFixed)
+                            if(!optimizer.vertex(id)->fixed())
+                                bAllFixed=false;
+
+                        EdgeMonoCalib* e = new EdgeMonoCalib(3);
+                        optimizer.vertex(id)->setFixed(false);
+
+                        e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
+                        e->setVertex(1, VP);
+                        e->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(maxKFid*5+1)));
+                        e->setMeasurement(obs);
+                        const float invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave];
+                        e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+
+                        g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+                        e->setRobustKernel(rk);
+                        rk->setDelta(thHuberMono);
+
+                        optimizer.addEdge(e);
+                    }
+                }
+            }
+        }
+
+        if(bAllFixed)
+        {
+            optimizer.removeVertex(vPoint);
+            vbNotIncludedMP[i]=true;
+        }
+    }
+
+    optimizer.initializeOptimization();
+    // optimizer.optimize(its);
+
+    for (int i = 0; i < 20; ++i)
+    {
+        optimizer.optimize(1, false); // 执行一步优化
+        double current_cost = optimizer.chi2();
+        std::cout << "Iteration " << i << " total cost: " << current_cost << std::endl;
+    }
+
+    // Recover optimized data
+
+    //Points
+    for(size_t i=0; i<vpMPs.size(); i++)
+    {
+        if(vbNotIncludedMP[i])
+            continue;
+
+        MapPoint* pMP = vpMPs[i];
+        g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(pMP->mnId+iniMPid+1));
+
+        pMP->SetWorldPos(vPoint->estimate().cast<float>());
+        pMP->UpdateNormalAndDepth();
+
+    }
+
+    // recover extrinsics
+    tslb = VExtrinsics_SL->estimate().translation();
+    Rslb = VExtrinsics_SL->estimate().rotation().toRotationMatrix();
+    Eigen::Matrix3d rsl_ = Rslb.transpose();
+    Eigen::Vector3d tsl_ = -rsl_ * tslb;
+    printf("Optimized Translation SL: x = %f, y = %f, z = %f\n", tsl_.x(), tsl_.y(), tsl_.z());
+    printf("Optimized Rotation SL:\n");
+    for (int i = 0; i < 3; ++i) {
+        printf("%f %f %f\n", rsl_(i, 0), rsl_(i, 1), rsl_(i, 2));
+    }
+
+    tsrb = VExtrinsics_SR->estimate().translation();
+    Rsrb = VExtrinsics_SR->estimate().rotation().toRotationMatrix();
+    Eigen::Matrix3d rsr_ = Rsrb.transpose();
+    Eigen::Vector3d tsr_ = -rsr_ * tsrb;
+    printf("Optimized Translation SR: x = %f, y = %f, z = %f\n", tsr_.x(), tsr_.y(), tsr_.z());
+    printf("Optimized Rotation SR:\n");
+    for (int i = 0; i < 3; ++i) {
+        printf("%f %f %f\n", rsr_(i, 0), rsr_(i, 1), rsr_(i, 2));
+    }
+
+    Eigen::Matrix3d Rsll = Rslb * Rcb.transpose();
+    Eigen::Vector3d tsll = tslb - Rsll * tcb;
+
+    Sophus::SE3f SE3_Tsll(Rsll.cast<float>(), tsll.cast<float>());
+    mpTracker->Tlsl() = SE3_Tsll.inverse();
+
+    Eigen::Matrix3d Rsrl = Rsrb * Rcb.transpose();
+    Eigen::Vector3d tsrl = tsrb - Rsrl * tcb;
+    Sophus::SE3f SE3_Tsrl(Rsrl.cast<float>(), tsrl.cast<float>());
+    mpTracker->Tlsr() = SE3_Tsrl.inverse();
 
     pMap->IncreaseChangeIndex();
 }

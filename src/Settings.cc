@@ -646,10 +646,13 @@ namespace ORB_SLAM3 {
         bool found;
 
         nFeatures_ = readParameter<int>(fSettings,"ORBextractor.nFeatures",found);
+        nSideGain_ = readParameter<int>(fSettings,"ORBextractor.nSideGain",found);
         scaleFactor_ = readParameter<float>(fSettings,"ORBextractor.scaleFactor",found);
         nLevels_ = readParameter<int>(fSettings,"ORBextractor.nLevels",found);
         initThFAST_ = readParameter<int>(fSettings,"ORBextractor.iniThFAST",found);
         minThFAST_ = readParameter<int>(fSettings,"ORBextractor.minThFAST",found);
+        if(!found)
+            nSideGain_ = 2;
     }
 
     void Settings::readViewer(cv::FileStorage &fSettings) {
@@ -895,6 +898,7 @@ namespace ORB_SLAM3 {
         }
 
         output << "\t-Features per image: " << settings.nFeatures_ << endl;
+        output << "\t-Features for sideward images: " << settings.nFeatures_*settings.nSideGain_ << endl;
         output << "\t-ORB scale factor: " << settings.scaleFactor_ << endl;
         output << "\t-ORB number of scales: " << settings.nLevels_ << endl;
         output << "\t-Initial FAST threshold: " << settings.initThFAST_ << endl;

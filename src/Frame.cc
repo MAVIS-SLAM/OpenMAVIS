@@ -1513,7 +1513,7 @@ Eigen::Vector3f Frame::UnprojectStereoFishEye(const int &i){
 
 Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const cv::Mat &imSideLeft, const cv::Mat &imSideRight, const double &timeStamp,
              ORBextractor* extractorLeft, ORBextractor* extractorRight, ORBextractor* ORBextractorSideLeft, ORBextractor* ORBextractorSideRight,
-             bool bleft, bool bright, bool bsideleft, bool bsideright, ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth,
+             bool bleft, bool bright, bool bsideleft, bool bsideright, bool bOnlineCalib, ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth,
              GeometricCamera* pCamera, GeometricCamera* pCamera2, GeometricCamera* pCamera3, GeometricCamera* pCamera4,
              Sophus::SE3f& Tlr, Sophus::SE3f& Tlsl, Sophus::SE3f& Tlsr, Frame* pPrevF, const IMU::Calib &ImuCalib)
         :mpcpi(NULL), mpORBvocabulary(voc),mpORBextractorLeft(extractorLeft),mpORBextractorRight(extractorRight), mpORBextractorSideLeft(ORBextractorSideLeft),mpORBextractorSideRight(ORBextractorSideRight),

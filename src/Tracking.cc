@@ -601,6 +601,7 @@ void Tracking::newParameterLoader(Settings *settings) {
 
     //ORB parameters
     int nFeatures = settings->nFeatures();
+    int nSideGain = settings->nSideGain();
     int nLevels = settings->nLevels();
     int fIniThFAST = settings->initThFAST();
     int fMinThFAST = settings->minThFAST();
@@ -615,8 +616,8 @@ void Tracking::newParameterLoader(Settings *settings) {
         mpIniORBextractor = new ORBextractor(5*nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
 
     if(mSensor==System::IMU_MULTI){
-        mpORBextractorSideLeft = new ORBextractor(nFeatures*2,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
-        mpORBextractorSideRight = new ORBextractor(nFeatures*2,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+        mpORBextractorSideLeft = new ORBextractor(nFeatures*nSideGain,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+        mpORBextractorSideRight = new ORBextractor(nFeatures*nSideGain,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
     }
 
     //IMU parameters
@@ -1589,7 +1590,7 @@ Sophus::SE3f Tracking::GrabImageMulti(const cv::Mat &imRectLeft, const cv::Mat &
 
     if (mSensor == System::IMU_MULTI)
         mCurrentFrame = Frame(mImGray,imGrayRight,imGraySideLeft,imGraySideRight,timestamp,
-                              mpORBextractorLeft,mpORBextractorRight,mpORBextractorSideLeft,mpORBextractorSideRight,mbleft, mbright, mbsideleft, mbsideright,
+                              mpORBextractorLeft,mpORBextractorRight,mpORBextractorSideLeft,mpORBextractorSideRight,mbleft, mbright, mbsideleft, mbsideright, mbcalib,
                               mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,mpCamera,mpCamera2,mpCamera3,mpCamera4,mTlr,mTlsl,mTlsr,&mLastFrame,*mpImuCalib);
 
     mCurrentFrame.mNameFile = filename;
@@ -3982,7 +3983,7 @@ void Tracking::Reset(bool bLocMap)
     // Clear Map (this erase MapPoints and KeyFrames)
     mpAtlas->clearAtlas();
     mpAtlas->CreateNewMap();
-    if (mSensor==System::IMU_STEREO || mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_RGBD)
+    if (mSensor==System::IMU_STEREO || mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_RGBD || mSensor == System::IMU_MULTI)
         mpAtlas->SetInertialSensor();
     mnInitialFrameId = 0;
 

@@ -110,6 +110,10 @@ IMU.T_b_c3: !!opencv-matrix
          -0.00059289, -0.0074175, -0.99997231, -0.08003969,
          -0.00394681, 0.99996472, -0.0074151, -0.00975499,
          0, 0, 0, 1]
+#  data: [ 0.99999204, 0.01394231, -0.01162215, -0.00814651,
+#          -0.001059289, -0.0174175, -0.99997231, -0.08003969,
+#          -0.01394681, 0.99996472, -0.0174151, -0.00975499,
+#          0, 0, 0, 1 ]
 
 # Transformation from side-right camera to body-frame (imu)
 IMU.T_b_c4: !!opencv-matrix
@@ -120,6 +124,10 @@ IMU.T_b_c4: !!opencv-matrix
          0.0081229, -0.00632904, 0.99994698, 0.06457457,
          0.01244067, 0.99990322, 0.00622771, -0.00765811,
          0, 0, 0, 1]
+#  data: [ -0.99988962, 0.03238942, 0.01820085, -0.00606784,
+#          0.0181229, -0.01632904, 0.99994698, 0.06457457,
+#          0.02244067, 0.99990322, 0.01622771, -0.00765811,
+#          0, 0, 0, 1 ]
 
 # IMU noise
 IMU.NoiseGyro: 0.000171 # 0.004 (VINS) # 0.00016 (TUM) # 0.00016    # rad/s^0.5
@@ -134,6 +142,9 @@ IMU.Frequency: 400.0
 
 # ORB Extractor: Number of features per image
 ORBextractor.nFeatures: 500 # Tested with 1250
+
+# The feature point extraction gain of the Sidward camera.
+ORBextractor.nSideGain: 3
 
 # ORB Extractor: Scale factor between levels in the scale pyramid
 ORBextractor.scaleFactor: 1.2

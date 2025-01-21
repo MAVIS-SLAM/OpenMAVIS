@@ -1278,6 +1278,19 @@ Sophus::SE3f KeyFrame::GetRelativePoseTlsr()
     return mTlsr;
 }
 
+void KeyFrame::SetRelativePoseTlsl(Sophus::SE3f& Tlsl)
+{
+    unique_lock<mutex> lock(mMutexPose);
+    mTlsl = Tlsl;
+    mTsll = Tlsl.inverse();
+}
+
+void KeyFrame::SetRelativePoseTlsr(Sophus::SE3f& Tlsr)
+{
+    mTlsr = Tlsr;
+    mTsrl = mTlsr.inverse();
+}
+
 Sophus::SE3<float> KeyFrame::GetSideRightPose() {
     unique_lock<mutex> lock(mMutexPose);
     return mTsrl * mTcw;
