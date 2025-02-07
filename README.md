@@ -56,7 +56,7 @@ python rosbag2euroc.py /PATH/TO/YOUR/file.bag -o /YOUR/OWN/DIR/
 ```
 Then, copy the timestamps from the first column of file
 ```
-/EXTRACTED_FOLDER/mav0/imu0/data.csv
+/EXTRACTED_FOLDER/mav0/cam0/data.csv
 ```
 and create a new timestamp file `timestamps.txt`
 
